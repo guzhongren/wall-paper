@@ -33,7 +33,7 @@ export const useExporterStore = create<ExporterState>((set) => ({
   currentMod: "template",
   width: initModel.width,
   height: initModel.height,
-  resolution: window.devicePixelRatio,
+  resolution: 1,
   currentDirection: "vertical",
   directions: ["vertical", "horizon"],
   currentModel: initModel.name,

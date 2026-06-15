@@ -17,17 +17,18 @@ function WallPaper() {
   const [mapWidth, setWidth] = useState(window.innerWidth);
 
   const mapRef = useRef<HTMLDivElement>(null);
-  const { currentModel, height, width } = useExporterStore();
+  const { currentModel, height, width, resolution } = useExporterStore();
 
   useEffect(() => {
+    const effectiveResolution = Math.max(1, resolution);
     if (currentModel === "PC") {
-      setHeight(height);
-      setWidth(width);
+      setHeight(height * effectiveResolution);
+      setWidth(width * effectiveResolution);
     } else {
-      setHeight(mm2px(height));
-      setWidth(mm2px(width));
+      setHeight(mm2px(height) * effectiveResolution);
+      setWidth(mm2px(width) * effectiveResolution);
     }
-  }, [height, width, currentModel]);
+  }, [height, width, currentModel, resolution]);
 
   useEffect(() => {
     mapboxgl.accessToken =
@@ -44,6 +45,10 @@ function WallPaper() {
       mapInstance.remove();
     };
   }, []);
+
+  useEffect(() => {
+    window.mapInstance?.resize();
+  }, [mapHeight, mapWidth]);
 
   return (
     <>
