@@ -1,23 +1,11 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import { Provider } from 'react-redux'
-import './index.scss';
-// import App from './components/App/App';
-import WallPaper from './containers/WallPaper'
-import * as serviceWorker from './serviceWorker';
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "antd/dist/reset.css";
+import "./index.scss";
+import WallPaper from "./containers/WallPaper";
 
-import store from './store'
-
-ReactDOM.render(
-  <React.StrictMode>
-    <Provider store={store}>
-      <WallPaper />
-    </Provider>
-  </React.StrictMode>,
-  document.getElementById('root')
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <WallPaper />
+  </StrictMode>,
 );
-
-// If you want your app to work offline and load faster, you can change
-// unregister() to register() below. Note this comes with some pitfalls.
-// Learn more about service workers: https://bit.ly/CRA-PWA
-serviceWorker.unregister();
