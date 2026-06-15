@@ -1,4 +1,4 @@
-name: Node.js CI
+name: ci
 
 on:
   push:
@@ -14,7 +14,6 @@ jobs:
     strategy:
       matrix:
         node-version: [22.x]
-
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -28,6 +27,23 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
       - run: pnpm build
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: build
+          path: ./build
+
+  deploy:
+    if: ${{ github.ref == 'refs/heads/master' }}
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: build
+          path: ./build
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
