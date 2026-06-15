@@ -1,50 +1,60 @@
-import React from 'react'
-import { render, cleanup, fireEvent } from '@testing-library/react';
-import '@testing-library/jest-dom/extend-expect'
-import { Provider} from 'react-redux'
+import { describe, test, expect, beforeAll, afterEach, beforeEach } from 'vitest'
+import { render, cleanup, fireEvent } from '@testing-library/react'
 import Template from '../../../src/components/Template'
-import store from '../../../src/store'
+import { useExporterStore } from '../../../src/stores/exporterStore'
 
-
-describe("Test", () => {
-  beforeAll(() => {  
-    Object.defineProperty(window, "matchMedia", {
+describe('Template', () => {
+  beforeAll(() => {
+    Object.defineProperty(window, 'matchMedia', {
       writable: true,
-      value: jest.fn().mockImplementation(query => ({
+      value: (query: string) => ({
         matches: false,
         media: query,
         onchange: null,
-        addListener: jest.fn(), // deprecated
-        removeListener: jest.fn(), // deprecated
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        dispatchEvent: jest.fn(),
-      }))
-    });
-  });
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => {},
+      }),
+    })
+  })
+
+  beforeEach(() => {
+    useExporterStore.setState({
+      currentModel: 'PC',
+      currentDirection: 'vertical',
+      width: window.innerWidth,
+      height: window.innerHeight,
+      resolution: 1,
+    })
+  })
 
   afterEach(cleanup)
 
-
-test('canary test', () => {
-  expect(true)
-})
-
-  test('can render with redux with defaults', () => {
-    const {getByLabelText, asFragment } = render(<Provider store={store}>
-      <Template />
-    </Provider>)
+  test('can render with defaults', () => {
+    const { getByLabelText, asFragment } = render(<Template />)
     expect(asFragment()).toMatchSnapshot()
 
-    const inputNode = getByLabelText('分辨率', { selector: 'input' })
+    const inputNode = getByLabelText('分辨率', {
+      selector: 'input',
+    }) as HTMLInputElement
     expect(inputNode.value).toBe('1')
-    
-    fireEvent.click(inputNode)
-    inputNode.value = '123'
+
+    fireEvent.change(inputNode, { target: { value: '123' } })
     expect(inputNode.value).toBe('123')
     expect(asFragment()).toMatchSnapshot()
   })
 
-});
+  test('shows current model in model selector', () => {
+    const { container } = render(<Template />)
+    const selectionItems = container.querySelectorAll('.ant-select-selection-item')
+    expect(selectionItems[0]).toHaveTextContent('PC')
+  })
 
-
+  test('shows current direction in direction selector', () => {
+    const { container } = render(<Template />)
+    const selectionItems = container.querySelectorAll('.ant-select-selection-item')
+    expect(selectionItems[1]).toHaveTextContent('vertical')
+  })
+})
