@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeAll, afterEach, beforeEach } from 'vitest'
-import { render, cleanup, fireEvent } from '@testing-library/react'
+import { render, cleanup } from '@testing-library/react'
 import Template from '../../../src/components/Template'
 import { useExporterStore } from '../../../src/stores/exporterStore'
 
@@ -18,43 +18,57 @@ describe('Template', () => {
         dispatchEvent: () => {},
       }),
     })
+    window.devicePixelRatio = 2
   })
 
   beforeEach(() => {
     useExporterStore.setState({
-      currentModel: 'PC',
-      currentDirection: 'vertical',
-      width: window.innerWidth,
-      height: window.innerHeight,
-      resolution: 1,
+      canvasSize: 'A4',
+      layout: 'vertical',
+      width: 210,
+      height: 297,
     })
   })
 
   afterEach(cleanup)
 
   test('can render with defaults', () => {
-    const { getByLabelText, asFragment } = render(<Template />)
-    expect(asFragment()).toMatchSnapshot()
-
-    const inputNode = getByLabelText('分辨率', {
-      selector: 'input',
-    }) as HTMLInputElement
-    expect(inputNode.value).toBe('1')
-
-    fireEvent.change(inputNode, { target: { value: '123' } })
-    expect(inputNode.value).toBe('123')
+    const { asFragment } = render(<Template />)
     expect(asFragment()).toMatchSnapshot()
   })
 
-  test('shows current model in model selector', () => {
+  test('shows canvas size options', () => {
     const { container } = render(<Template />)
-    const selectionItems = container.querySelectorAll('.ant-select-selection-item')
-    expect(selectionItems[0]).toHaveTextContent('PC')
+    const labels = container.querySelectorAll('.ant-radio-button-wrapper')
+    const text = container.textContent || ''
+    expect(text).toContain('A4')
+    expect(text).toContain('正方形')
+    expect(text).toContain('手机壁纸')
+    expect(text).toContain('PC')
   })
 
-  test('shows current direction in direction selector', () => {
+  test('shows layout options', () => {
     const { container } = render(<Template />)
-    const selectionItems = container.querySelectorAll('.ant-select-selection-item')
-    expect(selectionItems[1]).toHaveTextContent('vertical')
+    const labels = container.querySelectorAll('.ant-radio-button-wrapper')
+    const texts = Array.from(labels).map((el) => el.textContent)
+    expect(texts).toContain('纵向')
+    expect(texts).toContain('横向')
+  })
+
+  test('shows preview dimensions', () => {
+    const { container } = render(<Template />)
+    const inputs = container.querySelectorAll('input')
+    const previewInput = inputs[inputs.length - 1] as HTMLInputElement
+    expect(previewInput.value).toContain('px')
+  })
+
+  test('shows canvas size subtitle for A4', () => {
+    const { container } = render(<Template />)
+    expect(container.textContent).toContain('经典纸张')
+  })
+
+  test('shows PC wallpaper subtitle', () => {
+    const { container } = render(<Template />)
+    expect(container.textContent).toContain('PC壁纸')
   })
 })

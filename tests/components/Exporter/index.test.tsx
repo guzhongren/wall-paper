@@ -1,6 +1,21 @@
 import { describe, test, expect, beforeAll, afterEach, vi } from 'vitest'
 import { render, cleanup, fireEvent } from '@testing-library/react'
 import Exporter from '../../../src/components/Exporter'
+import { useExporterStore } from '../../../src/stores/exporterStore'
+
+vi.mock('../../../src/hooks/useHighResExport', () => ({
+  useHighResExport: () => ({
+    exportMap: vi.fn().mockResolvedValue(new Blob(['test'], { type: 'image/png' })),
+    cleanup: vi.fn(),
+  }),
+}))
+
+vi.mock('mapbox-gl/dist/mapbox-gl.js', () => ({
+  default: {
+    Map: vi.fn(),
+    accessToken: '',
+  },
+}))
 
 describe('Exporter', () => {
   beforeAll(() => {
@@ -17,11 +32,17 @@ describe('Exporter', () => {
         dispatchEvent: vi.fn(),
       }),
     })
+    URL.createObjectURL = vi.fn(() => 'blob:test')
+    URL.revokeObjectURL = vi.fn()
   })
 
   afterEach(() => {
     cleanup()
     delete (window as any).mapInstance
+    useExporterStore.setState({
+      exportStatus: 'idle',
+      exportProgress: 0,
+    })
   })
 
   test('renders download button', () => {
@@ -31,40 +52,32 @@ describe('Exporter', () => {
     expect(button!.textContent).toContain('Download')
   })
 
-  test('download button contains anchor with download attribute', () => {
+  test('renders export settings tabs', () => {
     const { container } = render(<Exporter />)
-    const anchor = container.querySelector('a[download="map.png"]')
-    expect(anchor).not.toBeNull()
+    const tabs = container.querySelectorAll('.ant-tabs-tab')
+    expect(tabs.length).toBe(3)
+    expect(tabs[0].textContent).toContain('预设')
+    expect(tabs[1].textContent).toContain('画质')
   })
 
-  test('calls getCanvas().toDataURL on download click', () => {
-    const mockToDataURL = vi.fn().mockReturnValue('data:image/png;base64,test')
-    ;(window as any).mapInstance = {
-      getCanvas: () => ({
-        toDataURL: mockToDataURL,
-      }),
-    }
-
+  test('download button is disabled when exporting', () => {
+    useExporterStore.setState({ exportStatus: 'rendering', exportProgress: 50 })
     const { container } = render(<Exporter />)
-    const button = container.querySelector('.ant-btn') as HTMLElement
-    fireEvent.click(button)
-
-    expect(mockToDataURL).toHaveBeenCalledWith('image/png')
+    const button = container.querySelector('.ant-btn') as HTMLButtonElement
+    expect(button.disabled).toBe(true)
   })
 
-  test('sets anchor href to data URL on click', () => {
-    const mockToDataURL = vi.fn().mockReturnValue('data:image/png;base64,test123')
-    ;(window as any).mapInstance = {
-      getCanvas: () => ({
-        toDataURL: mockToDataURL,
-      }),
-    }
-
+  test('download button shows loading state during export', () => {
+    useExporterStore.setState({ exportStatus: 'preparing', exportProgress: 10 })
     const { container } = render(<Exporter />)
-    const button = container.querySelector('.ant-btn') as HTMLElement
-    fireEvent.click(button)
+    const button = container.querySelector('.ant-btn')
+    expect(button!.textContent).toContain('准备渲染')
+  })
 
-    const anchor = container.querySelector('a[download="map.png"]') as HTMLAnchorElement
-    expect(anchor.href).toContain('data:image/png;base64,test123')
+  test('download button shows rendering text during rendering phase', () => {
+    useExporterStore.setState({ exportStatus: 'rendering', exportProgress: 30 })
+    const { container } = render(<Exporter />)
+    const button = container.querySelector('.ant-btn')
+    expect(button!.textContent).toContain('渲染中')
   })
 })

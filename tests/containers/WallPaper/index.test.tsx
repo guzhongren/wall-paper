@@ -38,51 +38,38 @@ describe('WallPaper', () => {
     mockResize.mockClear()
     delete (window as any).mapInstance
     useExporterStore.setState({
-      currentModel: 'PC',
-      currentDirection: 'vertical',
-      width: window.innerWidth,
-      height: window.innerHeight,
-      resolution: 1,
+      canvasSize: 'A4',
+      layout: 'vertical',
+      width: 210,
+      height: 297,
     })
   })
 
-  test('renders map container with initial PC dimensions', () => {
+  test('renders map container with A4 vertical dimensions', () => {
     const { container } = render(<WallPaper />)
     const mapDiv = container.querySelector('#map') as HTMLElement
     expect(mapDiv).not.toBeNull()
-    expect(mapDiv.style.width).toBe(`${window.innerWidth}px`)
-    expect(mapDiv.style.height).toBe(`${window.innerHeight}px`)
+    // mm2px(210) = (210/25.4)*192 ≈ 1587.40
+    // mm2px(297) = (297/25.4)*192 ≈ 2245.04
+    const w = parseFloat(mapDiv.style.width)
+    const h = parseFloat(mapDiv.style.height)
+    expect(w).toBeCloseTo(1587.40, -1)
+    expect(h).toBeCloseTo(2245.04, -1)
   })
 
-  test('updates map container dimensions when model changes to iPhone 11', async () => {
+  test('updates map container dimensions when canvas size changes', async () => {
     const { container } = render(<WallPaper />)
 
     await act(async () => {
-      useExporterStore.getState().changeCurrentModel('iPhone 11')
+      useExporterStore.getState().changeCanvasSize('正方形')
     })
 
     const mapDiv = container.querySelector('#map') as HTMLElement
-    // iPhone 11 vertical: width=71.4mm, height=144.0mm
-    // mm2px(71.4) = (71.4 / 25.4) * 192 ≈ 539.72
-    // mm2px(144) = (144 / 25.4) * 192 ≈ 1088.50
-    const widthPx = parseFloat(mapDiv.style.width)
-    const heightPx = parseFloat(mapDiv.style.height)
-    expect(widthPx).toBeCloseTo(539.72, 0)
-    expect(heightPx).toBeCloseTo(1088.50, 0)
-  })
-
-  test('updates map container dimensions when resolution changes', async () => {
-    const { container } = render(<WallPaper />)
-    const innerWidth = window.innerWidth
-    const innerHeight = window.innerHeight
-
-    await act(async () => {
-      useExporterStore.getState().changeResolution(3)
-    })
-
-    const mapDiv = container.querySelector('#map') as HTMLElement
-    expect(mapDiv.style.width).toBe(`${innerWidth * 3}px`)
-    expect(mapDiv.style.height).toBe(`${innerHeight * 3}px`)
+    const w = parseFloat(mapDiv.style.width)
+    const h = parseFloat(mapDiv.style.height)
+    // 正方形 210×210 → mm2px = (210/25.4)*192 ≈ 1587.40 each
+    expect(w).toBeCloseTo(1587.40, -1)
+    expect(h).toBeCloseTo(1587.40, -1)
   })
 
   test('calls map.resize() after dimension change', async () => {
@@ -90,24 +77,34 @@ describe('WallPaper', () => {
     mockResize.mockClear()
 
     await act(async () => {
-      useExporterStore.getState().changeCurrentModel('iPhone 11')
+      useExporterStore.getState().changeCanvasSize('手机壁纸')
     })
 
     expect(mockResize).toHaveBeenCalled()
   })
 
-  test('handles resolution=0 by clamping to 1', async () => {
+  test('preview dimensions are 1x regardless of export settings', async () => {
     const { container } = render(<WallPaper />)
-    const innerWidth = window.innerWidth
-    const innerHeight = window.innerHeight
+    const mapDiv = container.querySelector('#map') as HTMLElement
+    const prevW = parseFloat(mapDiv.style.width)
 
     await act(async () => {
-      useExporterStore.getState().changeResolution(0)
+      useExporterStore.getState().setExportPreset('8K')
     })
 
-    const mapDiv = container.querySelector('#map') as HTMLElement
-    // Math.max(1, 0) = 1, so dimensions should be 1x
-    expect(mapDiv.style.width).toBe(`${innerWidth}px`)
-    expect(mapDiv.style.height).toBe(`${innerHeight}px`)
+    expect(parseFloat(mapDiv.style.width)).toBe(prevW)
+  })
+
+  test('layout change to horizontal swaps dimensions', async () => {
+    const { container } = render(<WallPaper />)
+
+    const vertW = parseFloat((container.querySelector('#map') as HTMLElement).style.width)
+
+    await act(async () => {
+      useExporterStore.getState().changeLayout('horizontal')
+    })
+
+    const horizW = parseFloat((container.querySelector('#map') as HTMLElement).style.width)
+    expect(horizW).not.toBe(vertW)
   })
 })
