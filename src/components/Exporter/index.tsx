@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, Tabs, Button } from "antd";
 import "./index.scss";
 import Template from "../Template";
@@ -5,7 +6,10 @@ import Template from "../Template";
 const { TabPane } = Tabs;
 
 const Exporter = () => {
+  const [downloading, setDownloading] = useState(false);
+
   function downloadWallPaper(evt: React.MouseEvent<HTMLButtonElement>) {
+    setDownloading(true);
     const png = window.mapInstance.getCanvas().toDataURL("image/png");
     const anchor = (evt.currentTarget as HTMLElement).querySelector(
       "a",
@@ -13,6 +17,7 @@ const Exporter = () => {
     if (anchor) {
       anchor.href = png;
     }
+    setTimeout(() => setDownloading(false), 1000);
   }
 
   return (
@@ -26,7 +31,7 @@ const Exporter = () => {
             Content of Tab Pane 2
           </TabPane>
         </Tabs>
-        <Button type="primary" block onClick={downloadWallPaper}>
+        <Button type="primary" block onClick={downloadWallPaper} disabled={downloading} loading={downloading}>
           <a href="" download="map.png">
             Download ↓
           </a>
