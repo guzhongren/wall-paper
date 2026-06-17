@@ -1,53 +1,80 @@
-import { Form, Input, Select } from "antd";
-import { useExporterStore } from "../../stores/exporterStore";
+import { Form, Radio, Input } from "antd";
+import { useExporterStore, CANVAS_DIMENSIONS } from "../../stores/exporterStore";
+import type { CanvasSize, Layout } from "../../stores/exporterStore";
+import { mm2px } from "../../utils/mm2px";
 
-const { Option } = Select;
+const SIZE_LABELS: Record<CanvasSize, string> = {
+  A4: "A4",
+  "正方形": "正方形",
+  "手机壁纸": "手机壁纸",
+  PC: "PC",
+};
+
+const SIZE_SUBTITLES: Record<CanvasSize, string> = {
+  A4: "经典纸张",
+  "正方形": "社媒",
+  "手机壁纸": "手机壁纸",
+  PC: "PC壁纸",
+};
+
+function formatSize(size: CanvasSize, layout: Layout): string {
+  const dim = CANVAS_DIMENSIONS[size];
+  const w = layout === "horizontal" ? dim.height : dim.width;
+  const h = layout === "horizontal" ? dim.width : dim.height;
+  return `${w} × ${h} mm`;
+}
 
 const Template = () => {
   const {
-    directions,
-    models,
-    currentDirection,
-    currentModel,
-    resolution,
-    changeResolution,
-    changeCurrentModel,
-    changeCurrentDirection,
+    canvasSize,
+    layout,
+    width,
+    height,
+    changeCanvasSize,
+    changeLayout,
   } = useExporterStore();
 
-  const changeResolutionHandler = (evt: React.ChangeEvent<HTMLInputElement>) => {
-    changeResolution(parseFloat(evt.target.value));
-  };
+  const previewW = Math.round(mm2px(width));
+  const previewH = Math.round(mm2px(height));
+  const aspectRatio = previewW / previewH;
 
   return (
     <Form layout="vertical">
-      <Form.Item label="机型">
-        <Select defaultValue={currentModel} onChange={(value: string) => changeCurrentModel(value)}>
-          {models.map((model, index) => (
-            <Option key={index} value={model.name}>
-              {model.name}
-            </Option>
-          ))}
-        </Select>
-      </Form.Item>
-      <Form.Item label="方向">
-        <Select
-          defaultValue={currentDirection}
-          onChange={(value: string) => changeCurrentDirection(value)}
+      <Form.Item label="布局">
+        <Radio.Group
+          value={layout}
+          onChange={(e) => changeLayout(e.target.value as Layout)}
         >
-          {directions.map((direction, index) => (
-            <Option key={index} value={direction}>
-              {direction}
-            </Option>
-          ))}
-        </Select>
+          <Radio.Button value="vertical">纵向</Radio.Button>
+          <Radio.Button value="horizontal">横向</Radio.Button>
+        </Radio.Group>
       </Form.Item>
-      <Form.Item label="分辨率" htmlFor="resolution">
+
+      <Form.Item label="画布尺寸">
+        <Radio.Group
+          value={canvasSize}
+          onChange={(e) => changeCanvasSize(e.target.value as CanvasSize)}
+        >
+          {(Object.keys(CANVAS_DIMENSIONS) as CanvasSize[]).map((size) => (
+            <Radio.Button key={size} value={size} style={{ height: "auto", padding: "4px 12px" }}>
+              <div style={{ textAlign: "center" }}>
+                <div>{SIZE_LABELS[size]}</div>
+                <div style={{ fontSize: 11, color: "#999" }}>
+                  {SIZE_SUBTITLES[size]}
+                </div>
+              </div>
+            </Radio.Button>
+          ))}
+        </Radio.Group>
+        <div style={{ color: "#999", fontSize: 12, marginTop: 4 }}>
+          {formatSize(canvasSize, layout)}
+        </div>
+      </Form.Item>
+
+      <Form.Item label="预览">
         <Input
-          id="resolution"
-          placeholder="input placeholder"
-          value={resolution}
-          onChange={changeResolutionHandler}
+          readOnly
+          value={`${previewW} × ${previewH} px（${aspectRatio.toFixed(2)}:1）`}
         />
       </Form.Item>
     </Form>

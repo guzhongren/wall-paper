@@ -4,90 +4,122 @@ import { useExporterStore } from '../../src/stores/exporterStore'
 describe('exporterStore', () => {
   beforeEach(() => {
     useExporterStore.setState({
-      currentModel: 'PC',
-      currentDirection: 'vertical',
-      width: window.innerWidth,
-      height: window.innerHeight,
-      resolution: 1,
+      canvasSize: 'A4',
+      layout: 'vertical',
+      width: 210,
+      height: 297,
+      exportPreset: '4K',
+      customWidth: 3840,
+      customHeight: 2160,
+      dpi: 72,
+      format: 'png',
+      jpegQuality: 0.92,
+      exportStatus: 'idle',
+      exportProgress: 0,
     })
   })
 
   test('initial state has correct defaults', () => {
     const state = useExporterStore.getState()
-    expect(state.currentModel).toBe('PC')
-    expect(state.currentDirection).toBe('vertical')
-    expect(state.resolution).toBe(1)
-    expect(state.width).toBe(window.innerWidth)
-    expect(state.height).toBe(window.innerHeight)
+    expect(state.canvasSize).toBe('A4')
+    expect(state.layout).toBe('vertical')
+    expect(state.exportPreset).toBe('4K')
+    expect(state.dpi).toBe(72)
+    expect(state.format).toBe('png')
+    expect(state.width).toBe(210)
+    expect(state.height).toBe(297)
   })
 
-  test('changeCurrentModel to iPhone 11 in vertical direction', () => {
-    useExporterStore.getState().changeCurrentModel('iPhone 11')
+  test('changeCanvasSize to 正方形', () => {
+    useExporterStore.getState().changeCanvasSize('正方形')
     const state = useExporterStore.getState()
-    expect(state.currentModel).toBe('iPhone 11')
-    expect(state.width).toBe(71.4)
-    expect(state.height).toBe(144.0)
+    expect(state.canvasSize).toBe('正方形')
+    expect(state.width).toBe(210)
+    expect(state.height).toBe(210)
   })
 
-  test('changeCurrentModel to iPhone 11 in horizon direction', () => {
-    useExporterStore.getState().changeCurrentDirection('horizon')
-    useExporterStore.getState().changeCurrentModel('iPhone 11')
+  test('changeCanvasSize to 手机壁纸', () => {
+    useExporterStore.getState().changeCanvasSize('手机壁纸')
     const state = useExporterStore.getState()
-    expect(state.currentModel).toBe('iPhone 11')
-    expect(state.width).toBe(144.0)
-    expect(state.height).toBe(71.4)
-  })
-
-  test('changeCurrentModel to iPhone 11 Pro Max in vertical direction', () => {
-    useExporterStore.getState().changeCurrentModel('iPhone 11 Pro Max')
-    const state = useExporterStore.getState()
-    expect(state.currentModel).toBe('iPhone 11 Pro Max')
+    expect(state.canvasSize).toBe('手机壁纸')
     expect(state.width).toBe(77.8)
-    expect(state.height).toBe(158.0)
+    expect(state.height).toBe(158)
   })
 
-  test('switching back to PC from iPhone restores PC dimensions', () => {
-    useExporterStore.getState().changeCurrentModel('iPhone 11')
-    useExporterStore.getState().changeCurrentModel('PC')
+  test('changeCanvasSize to PC', () => {
+    useExporterStore.getState().changeCanvasSize('PC')
     const state = useExporterStore.getState()
-    expect(state.currentModel).toBe('PC')
-    expect(state.width).toBe(window.innerWidth)
-    expect(state.height).toBe(window.innerHeight)
+    expect(state.canvasSize).toBe('PC')
+    expect(state.width).toBe(480)
+    expect(state.height).toBe(270)
   })
 
-  test('changeCurrentDirection swaps width and height', () => {
-    useExporterStore.getState().changeCurrentModel('iPhone 11')
-    const before = useExporterStore.getState()
-    expect(before.width).toBe(71.4)
-    expect(before.height).toBe(144.0)
+  test('changeCanvasSize preserves layout orientation', () => {
+    useExporterStore.getState().changeLayout('horizontal')
+    useExporterStore.getState().changeCanvasSize('A4')
+    const state = useExporterStore.getState()
+    expect(state.canvasSize).toBe('A4')
+    expect(state.layout).toBe('horizontal')
+    expect(state.width).toBe(297)
+    expect(state.height).toBe(210)
+  })
 
-    useExporterStore.getState().changeCurrentDirection('horizon')
+  test('changeLayout swaps width and height', () => {
+    useExporterStore.getState().changeCanvasSize('手机壁纸')
+    expect(useExporterStore.getState().width).toBe(77.8)
+    expect(useExporterStore.getState().height).toBe(158)
+
+    useExporterStore.getState().changeLayout('horizontal')
     const after = useExporterStore.getState()
-    expect(after.currentDirection).toBe('horizon')
-    expect(after.width).toBe(144.0)
-    expect(after.height).toBe(71.4)
+    expect(after.layout).toBe('horizontal')
+    expect(after.width).toBe(158)
+    expect(after.height).toBe(77.8)
 
-    useExporterStore.getState().changeCurrentDirection('vertical')
+    useExporterStore.getState().changeLayout('vertical')
     const back = useExporterStore.getState()
-    expect(back.currentDirection).toBe('vertical')
-    expect(back.width).toBe(71.4)
-    expect(back.height).toBe(144.0)
+    expect(back.layout).toBe('vertical')
+    expect(back.width).toBe(77.8)
+    expect(back.height).toBe(158)
   })
 
-  test('changeResolution updates resolution value', () => {
-    useExporterStore.getState().changeResolution(3)
-    expect(useExporterStore.getState().resolution).toBe(3)
+  test('正方形 layout swap is symmetric', () => {
+    useExporterStore.getState().changeCanvasSize('正方形')
+    useExporterStore.getState().changeLayout('horizontal')
+    expect(useExporterStore.getState().width).toBe(210)
+    expect(useExporterStore.getState().height).toBe(210)
   })
 
-  test('unknown model name only updates currentModel not dimensions', () => {
-    useExporterStore.getState().changeCurrentModel('iPhone 11')
-    const prevWidth = useExporterStore.getState().width
-    const prevHeight = useExporterStore.getState().height
+  test('setExportPreset changes preset value', () => {
+    useExporterStore.getState().setExportPreset('8K')
+    expect(useExporterStore.getState().exportPreset).toBe('8K')
+  })
 
-    useExporterStore.getState().changeCurrentModel('NonExistent')
+  test('setDpi changes dpi value', () => {
+    useExporterStore.getState().setDpi(300)
+    expect(useExporterStore.getState().dpi).toBe(300)
+  })
+
+  test('setFormat changes format value', () => {
+    useExporterStore.getState().setFormat('jpeg')
+    expect(useExporterStore.getState().format).toBe('jpeg')
+  })
+
+  test('setJpegQuality changes jpeg quality value', () => {
+    useExporterStore.getState().setJpegQuality(0.8)
+    expect(useExporterStore.getState().jpegQuality).toBe(0.8)
+  })
+
+  test('setCustomDimensions updates width and height', () => {
+    useExporterStore.getState().setCustomDimensions(5000, 3000)
     const state = useExporterStore.getState()
-    expect(state.currentModel).toBe('NonExistent')
-    expect(state.width).toBe(prevWidth)
-    expect(state.height).toBe(prevHeight)
+    expect(state.customWidth).toBe(5000)
+    expect(state.customHeight).toBe(3000)
+  })
+
+  test('setExportStatus updates status and progress', () => {
+    useExporterStore.getState().setExportStatus('rendering', 50)
+    const state = useExporterStore.getState()
+    expect(state.exportStatus).toBe('rendering')
+    expect(state.exportProgress).toBe(50)
   })
 })
