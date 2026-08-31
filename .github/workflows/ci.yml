@@ -29,6 +29,7 @@ jobs:
         with:
           name: build
           path: ./build
+          retention-days: 1
 
   deploy:
     if: ${{ github.ref == 'refs/heads/master' }}
